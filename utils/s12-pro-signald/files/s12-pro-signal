@@ -1,0 +1,13 @@
+#!/bin/sh
+
+CFG="/etc/config/s12ledsig"
+ENABLED=$(uci get s12ledsig.core.enabled 2>/dev/null)
+INTERVAL=$(uci get s12ledsig.core.interval 2>/dev/null)
+
+[ "$ENABLED" != "1" ] && exit 0
+[ -z "$INTERVAL" ] && INTERVAL=60
+
+while true; do
+  /sbin/update_s12_leds
+  sleep "$INTERVAL"
+done

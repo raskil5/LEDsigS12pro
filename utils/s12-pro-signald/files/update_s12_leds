@@ -1,0 +1,31 @@
+#!/bin/sh
+
+DEVICE=/dev/ttyUSB0
+
+set_signal_leds() {
+  local VALUE=$(( ($1 - 1) / 20 + 1 ))
+  for i in $(seq 1 5); do
+    echo $([ $i -le $VALUE ] && echo 1 || echo 0) > "/sys/class/leds/blue:signal$i/brightness"
+  done
+}
+
+set_modem_leds() {
+  local ATTACHED=$(sms_tool -d $DEVICE at AT+CGATT | grep "+CGATT: 1")
+  if [ -n "$ATTACHED" ]; then
+    echo 1 > /sys/class/leds/modem:blue/brightness
+    echo 0 > /sys/class/leds/modem:red/brightness
+  else
+    echo 0 > /sys/class/leds/modem:blue/brightness
+    echo 1 > /sys/class/leds/modem:red/brightness
+  fi
+}
+
+[ ! -e "$DEVICE" ] && exit 0
+
+CSQ=$(sms_tool -d $DEVICE at AT+CSQ | awk -F '[ ,]' '/\+CSQ:/ {print $2}')
+[ -z "$CSQ" ] && exit 0
+
+CSQ_PER=$((CSQ * 100 / 31))
+
+set_signal_leds $CSQ_PER
+set_modem_leds
